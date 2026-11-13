@@ -24,7 +24,8 @@ from src.utils.errors import AppError
 from src.utils.pagination import normalize_pagination, page_payload
 
 
-def serialize_posting(posting: Posting, raw: RawPosting | None = None, source_name: str = "") -> dict:
+def serialize_posting(posting: Posting, raw: RawPosting | None = None, source_name: str = "",
+                      source_names: list[str] | None = None, batch_id: int | None = None) -> dict:
     return {
         "id": posting.id,
         "raw_id": posting.raw_id,
@@ -52,6 +53,9 @@ def serialize_posting(posting: Posting, raw: RawPosting | None = None, source_na
         "parse_reason": posting.parse_reason,
         "raw_title": raw.title_raw if raw else "",
         "raw_salary": raw.salary_raw if raw else "",
+        "dedupe_key": posting.dedupe_key or "",
+        "ingest_batch_id": posting.ingest_batch_id,
+        "source_names": source_names or ([source_name] if source_name else []),
     }
 
 
@@ -96,8 +100,36 @@ def list_postings(
         query = query.filter(or_(Posting.canonical_title.like(like), RawPosting.title_raw.like(like)))
     total = query.count()
     rows = query.order_by(Posting.id).offset(offset).limit(limit).all()
-    items = [serialize_posting(posting, raw, source_name) for posting, raw, source_name in rows]
+    source_sets = _source_names_for(db, [posting.dedupe_key for posting, _, _ in rows if posting.dedupe_key])
+    items = [
+        serialize_posting(posting, raw, source_name, source_sets.get(posting.dedupe_key or ""))
+        for posting, raw, source_name in rows
+    ]
     return page_payload(items, total, offset // limit + 1, limit)
+
+
+def _source_names_for(db: Session, dedupe_keys: list[str]) -> dict[str, list[str]]:
+    """同一自然键被哪些采集源投递过（标准化行的「合并前后来源」）。"""
+    if not dedupe_keys:
+        return {}
+    rows = (
+        db.query(RawPosting.dedupe_key, Source.name)
+        .join(Source, Source.id == RawPosting.source_id)
+        .filter(RawPosting.dedupe_key.in_(dedupe_keys))
+        .order_by(RawPosting.id)
+        .all()
+    )
+    result: dict[str, list[str]] = {}
+    seen: dict[str, set[str]] = {}
+    for dedupe_key, source_name in rows:
+        if not dedupe_key:
+            continue
+        bucket = seen.setdefault(dedupe_key, set())
+        if source_name in bucket:
+            continue
+        bucket.add(source_name)
+        result.setdefault(dedupe_key, []).append(source_name)
+    return result
 
 
 def stats(db: Session) -> dict:
@@ -111,10 +143,14 @@ def stats(db: Session) -> dict:
         )
         return [{"key": key, "count": count} for key, count in rows]
 
+    from src.constants.enums import RAW_DUPLICATE, RAW_QUARANTINED
+
     return {
         "total": db.query(Posting).count(),
         "flagged": db.query(Posting).filter(func.json_length(Posting.quality_flags) > 0).count(),
         "corrected": db.query(Posting).filter(Posting.is_corrected.is_(True)).count(),
+        "merged": db.query(RawPosting).filter(RawPosting.status == RAW_DUPLICATE).count(),
+        "quarantined": db.query(RawPosting).filter(RawPosting.status == RAW_QUARANTINED).count(),
         "by_city": group(Posting.city),
         "by_function": group(Posting.function_type),
         "by_seniority": group(Posting.seniority),

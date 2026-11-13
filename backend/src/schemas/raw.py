@@ -41,6 +41,9 @@ class RawOut(BaseModel):
     rule_version: str
     published_at: str | None = None
     posting_id: int | None = None
+    dedupe_key: str = ""
+    ingest_batch_id: int | None = None
+    superseded_by_raw_id: int | None = None
 
 
 class RawDetailOut(RawOut):

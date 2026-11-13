@@ -37,6 +37,9 @@ class Posting(Base):
     corrected_by: Mapped[str] = mapped_column(String(160), default="", nullable=False)
     corrected_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     parse_reason: Mapped[str] = mapped_column(String(120), default="", nullable=False)
+    # 采集去重：自然键唯一（同一公司+城市+职位只保留一条标准化岗位）
+    dedupe_key: Mapped[str] = mapped_column(String(200), unique=True, nullable=True, index=True)
+    ingest_batch_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )

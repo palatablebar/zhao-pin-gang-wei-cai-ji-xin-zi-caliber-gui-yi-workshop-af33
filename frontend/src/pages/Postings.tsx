@@ -63,9 +63,9 @@ export function PostingsPage() {
       />
 
       <div className="grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', marginBottom: '0.9rem' }}>
-        <MetricCard label="标准化岗位" value={stats.data?.total ?? '—'} hint="150 条目标本" />
-        <MetricCard label="质量标记" value={stats.data?.flagged ?? '—'} hint="面议/日结/倒置/兼职/极端值" tone="copper" />
-        <MetricCard label="人工修正" value={stats.data?.corrected ?? '—'} hint="修正后重跑不再覆盖" tone="indigo" />
+        <MetricCard label="标准化岗位" value={stats.data?.total ?? '—'} hint="同一公司+城市+职位只留一条" />
+        <MetricCard label="已合并/折叠" value={stats.data?.merged ?? '—'} hint="多来源重复投递，只保留最新薪酬" tone="indigo" />
+        <MetricCard label="隔离异常" value={stats.data?.quarantined ?? '—'} hint="面议/无法解析/缺字段/兼职，不进样本" tone="copper" />
         <MetricCard label="当前筛选" value={list.data?.total ?? '—'} hint={`${filters.city || '全部城市'} · ${filters.functionType ? FUNCTION_LABELS[filters.functionType] : '全部职能'}`} tone="sage" />
       </div>
 
@@ -132,6 +132,11 @@ export function PostingsPage() {
                     <div className="mono" style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-soft)' }}>
                       {posting.raw_title} · {posting.source_name}
                     </div>
+                    {posting.source_names && posting.source_names.length > 1 ? (
+                      <div className="mono" style={{ fontSize: 'var(--fs-micro)', color: 'var(--copper)' }}>
+                        合并来源：{posting.source_names.join(' / ')}
+                      </div>
+                    ) : null}
                   </td>
                   <td>{posting.city}</td>
                   <td>

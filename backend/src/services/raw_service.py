@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from src.config.settings import settings
 from src.constants import error_codes as codes
-from src.constants.enums import RAW_CORRECTED, RAW_STATUS_LABELS
+from src.constants.enums import RAW_CORRECTED, RAW_QUARANTINED, RAW_STATUS_LABELS
 from src.models.posting import Posting
 from src.models.raw_posting import RawPosting
 from src.models.source import Source
@@ -60,6 +60,10 @@ def _serialize_raw(raw: RawPosting, source_name: str, posting_id: int | None) ->
         "rule_version": raw.rule_version,
         "published_at": raw.published_at.isoformat() if raw.published_at else None,
         "posting_id": posting_id,
+        "company": raw.company,
+        "dedupe_key": raw.dedupe_key or "",
+        "ingest_batch_id": raw.ingest_batch_id,
+        "superseded_by_raw_id": raw.superseded_by_raw_id,
     }
 
 
@@ -112,6 +116,11 @@ def get_raw(db: Session, raw_id: int) -> dict:
     raw, source_name, posting = row
     data = _serialize_raw(raw, source_name, posting.id if posting else None)
     data["raw_json"] = raw.raw_json or {}
+    data["dedupe_key"] = raw.dedupe_key or ""
+    data["ingest_batch_id"] = raw.ingest_batch_id
+    data["superseded_by_raw_id"] = raw.superseded_by_raw_id
+    data["superseded_at"] = raw.superseded_at.isoformat() if raw.superseded_at else None
+    data["conflict_note"] = (raw.raw_json or {}).get("ingest_conflict", "") if raw.raw_json else ""
     from src.services.rule_service import active_version
 
     current_version = active_version(db)
@@ -124,6 +133,12 @@ def correct_raw(db: Session, raw_id: int, payload: dict, actor, ip: str) -> dict
     raw = db.get(RawPosting, raw_id)
     if raw is None:
         raise AppError(codes.NOT_FOUND, "原始岗位不存在", f"raw_id={raw_id}")
+    if raw.status == RAW_QUARANTINED:
+        raise AppError(
+            codes.CONFLICT,
+            "该记录已被采集入库隔离，需先在采集页查看冲突说明",
+            f"raw_id={raw_id}",
+        )
     if payload.get("title_raw"):
         raw.title_raw = payload["title_raw"][:200]
     if payload.get("salary_raw"):
@@ -144,7 +159,16 @@ def correct_raw(db: Session, raw_id: int, payload: dict, actor, ip: str) -> dict
         salary_min, salary_max, salary_median = salary.salary_min, salary.salary_max, salary.salary_median
 
     title = normalize_title(raw.title_raw, raw.experience_raw)
+    from src.services.ingest_service import dedupe_key_for
+
+    dedupe_key = raw.dedupe_key or dedupe_key_for(raw.company, raw.city_raw, raw.title_raw)
     posting = db.query(Posting).filter(Posting.raw_id == raw.id).first()
+    if posting is None:
+        posting = (
+            db.query(Posting)
+            .filter(Posting.dedupe_key == dedupe_key)
+            .first()
+        )
     if posting is None:
         posting = Posting(
             raw_id=raw.id,
@@ -157,9 +181,12 @@ def correct_raw(db: Session, raw_id: int, payload: dict, actor, ip: str) -> dict
             annual_months=salary.annual_months,
             is_fulltime="兼职" not in raw.employment_type_raw,
             title_matches=title.matched_terms,
+            dedupe_key=dedupe_key,
         )
         db.add(posting)
         db.flush()
+    posting.raw_id = raw.id
+    posting.source_id = raw.source_id
     posting.canonical_title = title.canonical_title
     posting.function_type = title.function_type
     posting.seniority = title.seniority

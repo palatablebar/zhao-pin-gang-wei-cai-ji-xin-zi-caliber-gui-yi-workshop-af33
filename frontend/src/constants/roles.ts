@@ -14,9 +14,9 @@ export const ROLE_DESCRIPTIONS: Record<string, string> = {
 // 与后端 PERMISSIONS 对齐的展示权限（后端是唯一事实源）
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   admin: ['read', 'posting:correct', 'raw:correct', 'rule:trial', 'rule:reparse', 'rule:activate',
-    'benchmark:generate', 'benchmark:publish', 'quality:dispose', 'source:sync', 'audit:read', 'export'],
+    'benchmark:generate', 'benchmark:publish', 'quality:dispose', 'source:sync', 'ingest:run', 'audit:read', 'export'],
   analyst: ['read', 'posting:correct', 'raw:correct', 'rule:trial', 'rule:reparse',
-    'benchmark:generate', 'quality:dispose', 'export'],
+    'benchmark:generate', 'quality:dispose', 'ingest:run', 'export'],
   client: ['read', 'export'],
 };
 
@@ -27,6 +27,7 @@ export function can(role: string | undefined, action: string): boolean {
 
 export const NAV_ITEMS = [
   { path: '/sources', label: '采集源', code: '01', permission: 'read' },
+  { path: '/ingest', label: '采集入库', code: '01B', permission: 'read' },
   { path: '/raw', label: '原始队列', code: '02', permission: 'read' },
   { path: '/postings', label: '标准化表', code: '03', permission: 'read' },
   { path: '/rules', label: '口径规则', code: '04', permission: 'read' },

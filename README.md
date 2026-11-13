@@ -11,8 +11,9 @@
 
 ## 主要功能
 
-- **采集源**：5 个源（拉勾/BOSS直聘/猎聘/企业官网/猎头），展示原始条数与同步状态；「模拟同步」由 Celery worker 异步追加 2 条演示岗位（external_id 幂等）。
-- **原始队列**：按解析状态（已解析/待修正/解析失败/重复折叠/脏原文/人工修正）筛选；raw 原文 ↔ 归一结果对照面板；人工修正薪资/城市并落库。
+- **采集源**：5 个源（拉勾/BOSS直聘/猎聘/企业官网/猎头），展示原始条数与同步状态；「模拟同步」由 Celery worker 异步投递到采集入库服务（自然键去重 + external_id 幂等）。
+- **采集入库**：POST `/api/ingest/batches` 按「公司 + 城市 + 职位」自然键去重：同一岗位本次只保留最新薪酬，迟到旧版本（发布时间更早）只留冲突说明、不覆盖最新版本；人工修正过的岗位不被采集改写；面议/无法解析/缺字段/兼职/批内重复 external_id 等异常记录隔离为 `quarantined`，不进标准化表与基准样本。批次以 `batch_key` 幂等，重复运行同一批不新增岗位。页面展示新增/合并/忽略/失败数量、分源统计与合并前后来源，一键运行五渠道重送演示批。
+- **原始队列**：按解析状态（已解析/待修正/解析失败/重复折叠/脏原文/人工修正/异常隔离）筛选；raw 原文 ↔ 归一结果对照面板（含冲突说明与「已被 raw #N 取代」）；人工修正薪资/城市并落库。
 - **标准化结果表**：城市/职能/职级/质量标记筛选；细线刻度尺式薪资区间条；CSV 导出。
 - **口径规则**：v1 历史基线（K/万/13~16 薪）与 v2 增补（面议识别、日结/时薪折算、中文千区间）版本化；按钮真实试跑命中率（v1 91.1% → v2 96.1%）；切版本重跑全部原始队列，人工修正条目不覆盖。
 - **薪资基准报表**：按城市 × 职能用 numpy 线性插值计算 P25/P50/P75、样本量与分布；发布（admin）与 CSV 导出。
@@ -28,7 +29,7 @@ docker compose up -d --build
 docker compose ps
 ```
 
-- 前端：http://localhost:18239
+- 前端：http://localhost:18239（采集入库页 `/ingest`）
 - 后端 OpenAPI：http://localhost:19239/docs
 - 健康检查：`GET /api/health`
 - 手动 seed（容器启动时 `SEED_DEMO=true` 已自动跑一次，幂等）：
@@ -88,13 +89,16 @@ gb-566/
 ├── backend/
 │   ├── Dockerfile / entrypoint.sh / alembic.ini / requirements.txt
 │   ├── scripts/seed_demo.py        # 幂等 seed，打印 SEED_SUMMARY
+│   ├── scripts/demo_ingest_batch.py # 五渠道重送演示批（合并/迟到旧版本/异常隔离）
+│   ├── scripts/verify_ingest.py     # 采集入库验收脚本（SQLite，无需 Docker）
+│   ├── scripts/verify_ingest_api.py # 采集入库 API 冒烟（TestClient）
 │   ├── scripts/demo_corpus.py      # 180 条确定性演示语料
 │   ├── scripts/worker_healthcheck.py
-│   ├── migrations/                 # Alembic（0001 由 models metadata 建表）
+│   ├── migrations/                 # Alembic（0001 由 models metadata 建表，0002 采集入库表/去重列）
 │   └── src/
 │       ├── config/                 # settings / database / celery_app / app
 │       ├── constants/              # enums / roles / error_codes / limits
-│       ├── models/                 # User/Source/RawPosting/Posting/ParseRule/Benchmark/AuditLog
+│       ├── models/                 # User/Source/RawPosting/Posting/ParseRule/Benchmark/AuditLog/IngestBatch/IngestRecord
 │       ├── schemas/                # Pydantic v2
 │       ├── services/               # salary_parser / title_normalizer / percentile / 领域服务
 │       ├── controllers/            # 路由处理函数
@@ -129,6 +133,17 @@ gb-566/
 - `worker` 复用 backend 镜像，`command` 切到 `celery -A src.config.celery_app worker -B`；健康检查读 Redis 心跳键。
 - Nginx：`location /api/ { proxy_pass http://backend:8000/; }` + SPA 回落；后端同一份路由既挂 `/api/*` 也挂根路径。
 - 命名卷：`db_data`、`redis_data`、`app_artifacts`。
+
+## 采集入库验收
+
+```bash
+# 服务级：新版本覆盖 / 迟到旧版本不覆盖 / 异常隔离 / 同批幂等 / 人工修正保护
+docker compose exec -T backend python -m scripts.verify_ingest
+# API 级：路由 + 鉴权 + 台账 + 合并前后来源
+docker compose exec -T backend python -m scripts.verify_ingest_api
+```
+
+两个脚本用 SQLite 内存库跑真实 service/路由，不需要 MySQL/Redis；容器内跑需要容器镜像自带 `httpx`（API 冒烟用 TestClient）。
 
 ## 共享枚举出现位置
 

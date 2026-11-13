@@ -63,12 +63,20 @@ export interface RawPosting {
   rule_version: string;
   published_at: string | null;
   posting_id: number | null;
+  dedupe_key?: string;
+  ingest_batch_id?: number | null;
+  superseded_by_raw_id?: number | null;
 }
 
 export interface RawDetail extends RawPosting {
   raw_json: Record<string, unknown>;
   current: ParsePreview | null;
   compare_versions: ParsePreview[];
+  dedupe_key: string;
+  ingest_batch_id: number | null;
+  superseded_by_raw_id: number | null;
+  superseded_at: string | null;
+  conflict_note: string;
 }
 
 export interface Posting {
@@ -98,6 +106,9 @@ export interface Posting {
   parse_reason: string;
   raw_title: string;
   raw_salary: string;
+  dedupe_key?: string;
+  ingest_batch_id?: number | null;
+  source_names?: string[];
 }
 
 export interface Paged<T> {
@@ -112,6 +123,8 @@ export interface PostingStats {
   total: number;
   flagged: number;
   corrected: number;
+  merged: number;
+  quarantined: number;
   by_city: { key: string; count: number }[];
   by_function: { key: string; count: number }[];
   by_seniority: { key: string; count: number }[];

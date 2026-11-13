@@ -1,6 +1,6 @@
 // 共享枚举（前端副本）——与 backend/src/constants/enums.ts 保持一致。
 // 出现位置：constants/enums.ts（定义）/ constants/roles.ts / pages/* / components/*
-export const RAW_STATUSES = ['parsed', 'needs_review', 'failed', 'duplicate', 'invalid', 'corrected'] as const;
+export const RAW_STATUSES = ['parsed', 'needs_review', 'failed', 'duplicate', 'invalid', 'corrected', 'quarantined'] as const;
 export type RawStatus = (typeof RAW_STATUSES)[number];
 
 export const RAW_STATUS_LABELS: Record<string, string> = {
@@ -10,6 +10,7 @@ export const RAW_STATUS_LABELS: Record<string, string> = {
   duplicate: '重复折叠',
   invalid: '脏原文',
   corrected: '人工修正',
+  quarantined: '异常隔离',
 };
 
 export const FUNCTION_TYPES = ['backend', 'frontend', 'algorithm', 'test', 'devops', 'product', 'design', 'data'] as const;

@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { NAV_ITEMS, ROLE_LABELS } from '../../constants/roles';
+import { NAV_ITEMS, ROLE_LABELS, can } from '../../constants/roles';
 import { useAuthStore } from '../../stores/authStore';
 
 export function AppShell() {
@@ -7,7 +7,10 @@ export function AppShell() {
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
 
-  const items = user?.role === 'client' ? NAV_ITEMS.filter((item) => item.path === '/benchmarks') : NAV_ITEMS;
+  const items = user?.role === 'client'
+    ? NAV_ITEMS.filter((item) => item.path === '/benchmarks')
+    : NAV_ITEMS.filter((item) => item.path !== '/ingest' || can(user?.role, 'ingest:run'));
+
 
   return (
     <div

@@ -32,7 +32,16 @@ RAW_FAILED = "failed"
 RAW_DUPLICATE = "duplicate"
 RAW_INVALID = "invalid"
 RAW_CORRECTED = "corrected"
-RAW_STATUSES = [RAW_PARSED, RAW_NEEDS_REVIEW, RAW_FAILED, RAW_DUPLICATE, RAW_INVALID, RAW_CORRECTED]
+RAW_QUARANTINED = "quarantined"
+RAW_STATUSES = [
+    RAW_PARSED,
+    RAW_NEEDS_REVIEW,
+    RAW_FAILED,
+    RAW_DUPLICATE,
+    RAW_INVALID,
+    RAW_CORRECTED,
+    RAW_QUARANTINED,
+]
 RAW_STATUS_LABELS = {
     RAW_PARSED: "已解析",
     RAW_NEEDS_REVIEW: "待修正",
@@ -40,6 +49,33 @@ RAW_STATUS_LABELS = {
     RAW_DUPLICATE: "重复折叠",
     RAW_INVALID: "脏原文",
     RAW_CORRECTED: "人工修正",
+    RAW_QUARANTINED: "异常隔离",
+}
+
+# 采集入库：批次状态 / 单条处理动作 / 冲突类型
+INGEST_BATCH_RUNNING = "running"
+INGEST_BATCH_COMPLETED = "completed"
+INGEST_BATCHES = [INGEST_BATCH_RUNNING, INGEST_BATCH_COMPLETED]
+
+INGEST_NEW = "new"
+INGEST_MERGED = "merged"
+INGEST_IGNORED = "ignored"
+INGEST_FAILED = "failed"
+INGEST_ACTIONS = [INGEST_NEW, INGEST_MERGED, INGEST_IGNORED, INGEST_FAILED]
+INGEST_ACTION_LABELS = {
+    INGEST_NEW: "新增",
+    INGEST_MERGED: "合并",
+    INGEST_IGNORED: "忽略",
+    INGEST_FAILED: "失败",
+}
+
+CONFLICT_LATE_OLD_VERSION = "late_old_version"
+CONFLICT_MANUAL_CORRECTION = "manual_correction_protected"
+CONFLICT_SAME_PUBLISHED_AT = "same_published_at"
+CONFLICT_LABELS = {
+    CONFLICT_LATE_OLD_VERSION: "迟到旧版本（未覆盖最新薪酬）",
+    CONFLICT_MANUAL_CORRECTION: "人工修正保护（未覆盖修正值）",
+    CONFLICT_SAME_PUBLISHED_AT: "同发布时间（保留先入库版本）",
 }
 
 FUNCTION_TYPES = ["backend", "frontend", "algorithm", "test", "devops", "product", "design", "data"]

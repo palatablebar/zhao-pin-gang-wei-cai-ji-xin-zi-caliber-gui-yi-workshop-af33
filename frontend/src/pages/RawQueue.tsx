@@ -18,7 +18,7 @@ import type { RawDetail } from '../types/models';
 import { datetime } from '../utils/format';
 import { errorMessage } from '../utils/errorMessage';
 
-const STATUS_TABS = ['', 'failed', 'needs_review', 'parsed', 'duplicate', 'invalid', 'corrected'];
+const STATUS_TABS = ['', 'quarantined', 'failed', 'needs_review', 'parsed', 'duplicate', 'invalid', 'corrected'];
 
 export function RawQueuePage() {
   const user = useAuthStore((state) => state.user);
@@ -234,14 +234,29 @@ export function RawQueuePage() {
               <h3 style={{ fontSize: '1.05rem', margin: '0.35rem 0 0.15rem' }}>{detail.title_raw}</h3>
               <div style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-soft)', marginBottom: '0.6rem' }} className="mono">
                 {detail.source_name} · {detail.external_id} · {datetime(detail.published_at)}
+                {detail.superseded_by_raw_id ? ` · 已被 raw #${detail.superseded_by_raw_id} 取代` : ''}
               </div>
+              {detail.conflict_note ? (
+                <div className="card" style={{ padding: '0.55rem 0.7rem', marginBottom: '0.6rem', background: 'var(--paper-deep)' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-micro)', letterSpacing: '0.12em', color: 'var(--copper)' }}>
+                    采集冲突说明
+                  </div>
+                  <div style={{ fontSize: 'var(--fs-small)' }}>{detail.conflict_note}</div>
+                </div>
+              ) : null}
               <ParseDiffPanel detail={detail} />
               <div style={{ marginTop: '0.7rem', display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                 {detail.current?.flags.map((flag) => (
                   <span key={flag} className="tag tag-rust">{QUALITY_LABELS[flag] || flag}</span>
                 ))}
               </div>
-              <CorrectionForm detail={detail} role={user?.role} onDone={(message) => { setNotice(message); refreshAll(); }} />
+              {detail.status === 'quarantined' ? (
+                <div style={{ marginTop: '0.9rem', borderTop: '1px solid var(--paper-line)', paddingTop: '0.7rem', fontSize: 'var(--fs-small)', color: 'var(--rust)' }}>
+                  该记录已被采集入库隔离（{detail.parse_reason}），不进入标准化表与基准样本；修正前需先在采集页确认冲突。
+                </div>
+              ) : (
+                <CorrectionForm detail={detail} role={user?.role} onDone={(message) => { setNotice(message); refreshAll(); }} />
+              )}
               {notice ? <p style={{ color: 'var(--sage)', fontSize: 'var(--fs-small)' }}>{notice}</p> : null}
             </>
           ) : null}

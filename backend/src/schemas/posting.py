@@ -30,6 +30,9 @@ class PostingOut(BaseModel):
     parse_reason: str = ""
     raw_title: str = ""
     raw_salary: str = ""
+    dedupe_key: str = ""
+    ingest_batch_id: int | None = None
+    source_names: list[str] = []
 
 
 class PostingPage(BaseModel):
@@ -44,6 +47,8 @@ class PostingStats(BaseModel):
     total: int
     flagged: int
     corrected: int
+    merged: int = 0
+    quarantined: int = 0
     by_city: list[dict]
     by_function: list[dict]
     by_seniority: list[dict]

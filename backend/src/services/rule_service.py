@@ -16,6 +16,7 @@ from src.constants.enums import (
     RAW_INVALID,
     RAW_NEEDS_REVIEW,
     RAW_PARSED,
+    RAW_QUARANTINED,
 )
 from src.models.parse_rule import ParseRule
 from src.models.posting import Posting
@@ -99,7 +100,7 @@ def trial(db: Session, version: str) -> dict:
 
 def _status_after(raw: RawPosting, salary_ok: bool, negotiable: bool,
                   title_confidence: float, unparsed: bool = False) -> str:
-    if raw.status in (RAW_DUPLICATE, RAW_INVALID):
+    if raw.status in (RAW_DUPLICATE, RAW_INVALID, RAW_QUARANTINED):
         return raw.status
     if raw.status == RAW_CORRECTED:
         return RAW_CORRECTED
@@ -142,7 +143,7 @@ def reparse(db: Session, version: str, actor, ip: str) -> dict:
     updated_postings = 0
     skipped_corrected = 0
     for raw in raws:
-        if raw.status in (RAW_DUPLICATE, RAW_INVALID):
+        if raw.status in (RAW_DUPLICATE, RAW_INVALID, RAW_QUARANTINED):
             raw.rule_version = version
             continue
         salary = parse_salary(raw.salary_raw, version)

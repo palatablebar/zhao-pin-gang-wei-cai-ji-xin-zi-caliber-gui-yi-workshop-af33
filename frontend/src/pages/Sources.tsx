@@ -87,7 +87,8 @@ export function SourcesPage() {
 
       <div className="card" style={{ marginTop: '1.2rem', padding: '0.9rem 1.1rem', fontSize: 'var(--fs-small)', color: 'var(--ink-soft)' }}>
         本演示不真发爬取请求：seed 的原始 JSON 代表已采集入湖数据，「模拟同步」由 Celery worker
-        异步追加 2 条演示岗位（external_id 幂等，重复点击不重复入库）。
+        异步投递到采集入库（同一公司+城市+职位只保留最新薪酬，external_id 幂等，重复点击不新增岗位）。
+        多来源重送、迟到旧版本与异常隔离见「采集入库」页。
       </div>
     </div>
   );
