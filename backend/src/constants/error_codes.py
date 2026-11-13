@@ -1,0 +1,24 @@
+"""统一错误码与默认文案。"""
+from __future__ import annotations
+
+VALIDATION_ERROR = "VALIDATION_ERROR"
+AUTH_REQUIRED = "AUTH_REQUIRED"
+AUTH_INVALID = "AUTH_INVALID"
+AUTH_BAD_CREDENTIALS = "AUTH_BAD_CREDENTIALS"
+FORBIDDEN = "FORBIDDEN"
+NOT_FOUND = "NOT_FOUND"
+CONFLICT = "CONFLICT"
+RATE_LIMITED = "RATE_LIMITED"
+INTERNAL_ERROR = "INTERNAL_ERROR"
+
+ERROR_MESSAGES = {
+    VALIDATION_ERROR: "请求参数不合法",
+    AUTH_REQUIRED: "请先登录",
+    AUTH_INVALID: "登录状态无效，请重新登录",
+    AUTH_BAD_CREDENTIALS: "邮箱或密码不正确",
+    FORBIDDEN: "当前角色无权执行该操作",
+    NOT_FOUND: "资源不存在",
+    CONFLICT: "资源状态冲突",
+    RATE_LIMITED: "请求过于频繁，请稍后再试",
+    INTERNAL_ERROR: "服务内部错误",
+}

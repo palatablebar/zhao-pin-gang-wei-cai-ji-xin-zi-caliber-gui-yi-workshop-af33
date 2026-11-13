@@ -1,0 +1,32 @@
+/* jobnorm 视觉：图书馆卡片目录柜 + 档案抽屉
+   米白卡纸 + 靛蓝 + 铜褐；Newsreader 衬线标题 / Courier Prime 等宽数据 */
+:root {
+  --paper: oklch(96.2% 0.018 85);
+  --paper-card: oklch(98.2% 0.012 84);
+  --paper-deep: oklch(91.5% 0.026 82);
+  --paper-line: oklch(84% 0.03 78);
+  --ink: oklch(27% 0.045 262);
+  --ink-soft: oklch(41% 0.035 262);
+  --indigo: oklch(38% 0.095 265);
+  --indigo-deep: oklch(30% 0.075 266);
+  --copper: oklch(57% 0.115 55);
+  --copper-soft: oklch(72% 0.07 62);
+  --rust: oklch(50% 0.14 32);
+  --sage: oklch(54% 0.075 158);
+  --gold: oklch(72% 0.115 88);
+
+  --font-display: 'Newsreader', 'Songti SC', 'STSong', 'Noto Serif SC', serif;
+  --font-mono: 'Courier Prime', 'SFMono-Regular', 'Menlo', 'Courier New', monospace;
+  --font-body: 'Newsreader', 'Songti SC', 'STSong', serif;
+
+  --fs-hero: clamp(1.9rem, 2.4vw + 1rem, 3rem);
+  --fs-title: clamp(1.25rem, 1vw + 0.9rem, 1.7rem);
+  --fs-body: 0.94rem;
+  --fs-small: 0.8rem;
+  --fs-micro: 0.72rem;
+
+  --radius-card: 3px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow-card: 0 1px 0 var(--paper-line), 0 12px 24px -18px oklch(30% 0.04 262 / 0.55);
+  --shadow-lift: 0 2px 0 var(--paper-line), 0 22px 36px -22px oklch(30% 0.04 262 / 0.65);
+}
